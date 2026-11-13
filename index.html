@@ -4,27 +4,90 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Evgenii Molov</title>
-  <meta name="description" content="Evgenii Molov - personal page">
+  <meta name="description" content="Evgenii Molov - player one, based in Berlin">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
   <style>
-    :root { color-scheme: light dark; --fg: #1a1a1a; --muted: #666; --bg: #fafafa; --link: #0b57d0; }
-    @media (prefers-color-scheme: dark) { :root { --fg: #e8e8e8; --muted: #999; --bg: #121212; --link: #8ab4f8; } }
-    body { margin: 0; min-height: 100vh; display: grid; place-items: center; background: var(--bg); color: var(--fg);
-           font: 18px/1.6 system-ui, -apple-system, sans-serif; }
-    main { max-width: 36rem; padding: 2rem 1rem; }
-    h1 { margin: 0 0 .25rem; font-size: 2rem; }
-    .muted { color: var(--muted); margin: 0 0 1.5rem; }
-    a { color: var(--link); }
-    ul { list-style: none; padding: 0; display: flex; gap: 1.25rem; flex-wrap: wrap; }
+    :root { --bg: #1b1b2f; --panel: #0f0f1e; --fg: #f4f4f4; --gold: #ffd23f; --hp: #ef476f; --mp: #4cc9f0; --xp: #06d6a0; }
+    * { box-sizing: border-box; }
+    body { margin: 0; min-height: 100vh; display: grid; grid-template-columns: minmax(0, 34rem); place-content: center; padding: 1rem; color: var(--fg);
+           background: var(--bg) repeating-linear-gradient(0deg, transparent 0 3px, rgb(0 0 0 / .25) 3px 4px);
+           font: 11px/2 "Press Start 2P", monospace; }
+    main { padding: 1.5rem; background: var(--panel); overflow-wrap: anywhere;
+           border: 4px solid var(--fg); box-shadow: 0 0 0 4px var(--panel), 8px 8px 0 4px #000; }
+    .hero { display: flex; gap: 1rem; align-items: center; margin-bottom: 1rem; }
+    .sprite { font-size: 3.5rem; line-height: 1; animation: bob .5s steps(2) infinite alternate; }
+    h1 { margin: 0; font-size: 1.1rem; line-height: 1.6; color: var(--gold); }
+    h2 { margin: 1.25rem 0 .25rem; font-size: 11px; color: var(--gold); }
+    p { margin: 0; }
+    .stat { display: grid; grid-template-columns: 6ch 1fr 7ch; gap: .5rem; align-items: center; }
+    .bar { height: 12px; border: 2px solid var(--fg); }
+    .bar span { display: block; height: 100%; transition: width .3s steps(4); }
+    ul { margin: 0; padding: 0; list-style: none; }
+    li::before { content: "▶ "; color: var(--gold); }
+    a { color: var(--mp); }
+    a:hover, a:focus-visible { color: var(--gold); }
+    button { margin-top: 1rem; padding: .75rem 1rem; font: inherit; color: var(--panel); background: var(--gold);
+             border: 0; box-shadow: 4px 4px 0 #000; cursor: pointer; }
+    button:active { transform: translate(4px, 4px); box-shadow: none; }
+    #log { min-height: 4em; margin-top: 1rem; padding: .5rem; border: 2px dashed var(--fg); }
+    @keyframes bob { to { transform: translateY(-6px); } }
+    @media (prefers-reduced-motion: reduce) { * { animation: none !important; transition: none !important; } }
   </style>
 </head>
 <body>
   <main>
-    <h1>Evgenii Molov</h1>
-    <p class="muted">Berlin</p>
-    <p>Hi, I'm Evgenii. Write a couple of sentences about yourself here.</p>
+    <div class="hero">
+      <div class="sprite" aria-hidden="true">🧑‍💻</div>
+      <div>
+        <h1>EVGENII MOLOV</h1>
+        <p>LVL <span id="lvl">1</span> · Human (unverified)</p>
+        <p>Spawn point: Berlin</p>
+      </div>
+    </div>
+
+    <div class="stat"><span>HP</span><div class="bar"><span style="width:100%;background:var(--hp)"></span></div><span>100/100</span></div>
+    <div class="stat"><span>COFFEE</span><div class="bar"><span style="width:30%;background:var(--mp)"></span></div><span>3/10</span></div>
+    <div class="stat"><span>XP</span><div class="bar"><span id="xp" style="width:0;background:var(--xp)"></span></div><span id="xpn">0/100</span></div>
+
+    <h2>SIDE QUESTS</h2>
     <ul>
-      <li><a href="https://github.com/LoopKarma">GitHub</a></li>
+      <li><a href="https://github.com/LoopKarma" rel="me">Explore the code dungeon (GitHub)</a></li>
+      <li><a href="https://www.linkedin.com/in/evgeniimolov/" rel="me">Visit the networking tavern (LinkedIn)</a></li>
     </ul>
+
+    <button id="act" type="button">[A] GRIND XP</button>
+    <p id="log" aria-live="polite">Press [A] to grind. Nobody is watching. Probably.</p>
   </main>
+  <script>
+    const events = [
+      "You fixed a bug. Two more spawned.",
+      "Coffee consumed. Speed +1.",
+      "You read the docs. Critical hit!",
+      "A meeting that could have been an email. -5 HP.",
+      "It works on your machine. +34 XP.",
+      "You closed 47 browser tabs. Inner peace +1.",
+      "git push --force... the crowd gasps.",
+    ];
+    const skills = ["Turning it off and on again", "Rubber duck debugging", "Centering a div", "Naming things (beta)", "Reading error messages"];
+    const $ = id => document.getElementById(id);
+    let xp = 0, lvl = 1;
+    $("act").onclick = () => {
+      xp += 34;
+      if (xp >= 100) {
+        xp = 0;
+        $("lvl").textContent = ++lvl;
+        $("log").textContent = `LEVEL UP! Skill unlocked: ${skills[(lvl - 2) % skills.length]}`;
+      } else {
+        $("log").textContent = events[Math.floor(Math.random() * events.length)];
+      }
+      $("xp").style.width = xp + "%";
+      $("xpn").textContent = xp + "/100";
+    };
+    document.addEventListener("keydown", e => {
+      if (e.key.toLowerCase() === "a" && !e.repeat && !e.metaKey && !e.ctrlKey && !e.altKey) $("act").click();
+    });
+  </script>
 </body>
 </html>
